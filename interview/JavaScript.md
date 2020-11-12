@@ -14,15 +14,15 @@
   null 表示"没有对象"，即该处不应该有值。
   undefined表示"缺少值"，就是此处应该有一个值，但是还没有定义。
 
-5. typeof instanceOf constructor Object.prototype.toString.call()
+5. typeof instanceof constructor Object.prototype.toString.call()
   typeof 
   只能精准检测原始类型，不能准确的检测出引用类型的具体类型。
   注意： typeof null === 'object', typeof func === 'function', typeof 所能得到的值只有 'number', 'string', 'boolean', 'undefined', 'object', 'function'。
-  instanceOf
+  instanceof
   实质是通过检测原型链上原型对象来判断的。
-  注意：instanceOf 只能检测对象，且所有对象 instanceOf Object 都会返回 true，且有原型链断裂的风险。
+  注意：instanceof 只能检测对象，且所有对象 instanceof Object 都会返回 true，且有原型链断裂的风险。
   constructor
-  和 instanceOf 的原理类似
+  和 instanceof 的原理类似
   注意：有原型链断裂的风险。
   Object.prototype.toString.call()
   最稳健的方法
@@ -68,6 +68,8 @@
       - 在上下文中运行/解释功能代码，并在逐行执行代码时分配变量值。
 
 2. 什么是作用域？
+  作用域是指程序源代码中定义变量的区域。
+  作用域规定了如何查找变量，也就是确定当前执行代码对变量的访问权限。
   JS 中的作用域是词法作用域，而不是动态作用域。在代码编写时就已经确定，作用域的具体内容就是当前执行上下文的变量对象。
   每个函数都有一个与之对应的执行上下文，该执行上下文包含一个变量对象(VO)，每个执行上下文的作用域链属性是当前上下文的变量对象 +所有父级执行上下文的变量对象的集合。
 
@@ -98,4 +100,28 @@
   手写实现
 
 
-## 
+## this 与 new
+1. this 是什么？
+  this 是 JavaScript 语言中的一个关键字，表示当前执行代码的环境对象，只存在于全局和函数中。
+
+2. 如何确定 this 的值？
+  (1) 全局作用域下，this 指向全局对象，浏览器中为 window 对象。
+  (2) 独立函数调用时，this 指向全局对象 window。
+  (3) 对象方法调用时，this 指向当前对象。
+  (4) 构造函数中，this 指向 new 的对象实例。
+  (5) call，apply，bind中，this 指向传入的第一个参数对象。
+  (6) DOM 事件绑定，onClick 和 addEventListener 中 this 默认指向绑定事件的元素，而使用 attachEvent 中的 this 默认指向 window。
+  (7) 箭头函数中，this 与所在词法环境 this 保持一致。
+  总结：(1) ~ (6) 中，this 都是动态绑定的；(7) 中的 this 是静态词法确定的。
+
+3. new 原理以及模拟实现
+  JavaScript 调用 new 的过程：
+    (1) 生成一个新的空对象
+    (2) 将空对象链接到原型对象
+    (3) 绑定 this
+    (4) 返回新对象
+  注意：如果构造函数的 return 返回的是个对象的话，new 的时候会返回该对象；return 的是 undefined 或者原始类型的话就返回生成的对象实例。
+
+  手写模拟实现
+
+4. 手写实现 call apply bind
