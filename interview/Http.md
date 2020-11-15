@@ -705,6 +705,9 @@ CDN 投入了大笔资金，在全国、乃至全球的各个大枢纽城市都�
     + 回源：正相反，缓存里没有，必须用代理的方式回源站取。
 
 
+## WebSocket
+[WebSocket](https://halfrost.com/websocket/)
+
 ## Web 安全
 **XSS(Cross Site Scripting 跨站脚本攻击)**
 
