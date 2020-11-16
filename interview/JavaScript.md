@@ -215,9 +215,112 @@ Object.create(arg, pro) 创建的对象的原型取决于arg，arg为null，新�
   process.nextTick 是一个独立于 eventLoop 的任务队列。
   在每一个 eventLoop 阶段完成后会去检查这个队列，如果里面有任务，会让这部分任务优先于微任务执行。
 
-6. Promise async/await setInterval setTimeout 之间的执行顺序是怎样的？
+
+## 异步解决方案
+1. callback
+  缺点：callback 表达异步流程的方式是非线性的、非顺序的，这使得人脑正确推导这样的代码难度很大，容易形成"回调地狱"。
+
+2. Promise
+  Promise 对象代表一个异步操作，有三种状态：pending（进行中）、fulfilled（已成功）和rejected（已失败），对象的状态不受外界影响，一旦确定不会再更改。
+
+  Promise 对象是一个构造函数，用来生成Promise实例。
+  Promise 构造函数接受一个函数作为参数，该函数的两个参数分别是 resolve和 reject。它们是两个函数，由 JavaScript 引擎提供，不用自己部署。
+  ```javascript
+  const promise = new Promise((resolve, reject) => {
+    let option; // 表示异步操作
+
+    option.result ? resolve(val) : reject(err); // 异步操作成功调用 resolve，失败调用 reject
+  })
+  ```
+
+  Promise.prototype.then(() => {})，它的作用是为 Promise 实例添加状态改变时的回调函数。
+  Promise.prototype.catch(() => {})，捕获异步操作或代码运行中的错误。
+  Promise.prototype.finally(() => {})，用于指定不管 Promise 对象最后状态如何，都会执行的操作。
+
+  Promise.resolve()，将现有对象转换成为 Promise 对象。
+  Promise.resolve()，也会返回一个新的 Promise 实例，该实例的状态为rejected。
+
+  Promise.all([promise1, promise2...]),用于将多个 Promise 实例，包装成一个新的 Promise 实例。
+  ```javascript
+  const p = Promise.all([p1, p2, p3]);
+  ```
+  只有 p1、p2、p3 的状态都变成 fulfilled，p 的状态才会变成 fulfilled，此时 p1、p2、p3 的返回值组成一个数组，传递给 p 的回调函数。
+  只要 p1、p2、p3 之中有一个被 rejected，p 的状态就变成 rejected，此时第一个被 reject 的实例的返回值，会传递给 p 的回调函数。
+
+  Promise.race([promise1, promise2...])，同样是将多个 Promise 实例，包装成一个新的 Promise 实例。
+  ```javascript
+  const p = Promise.race([p1, p2, p3]);
+  ```
+  只要 p1、p2、p3 之中有一个实例率先改变状态，p 的状态就跟着改变。那个率先改变的 Promise 实例的返回值，就传递给 p 的回调函数。
+
+  Promise.allSettled([promise1, promise2...])，接受一组 Promise 实例作为参数，包装成一个新的 Promise 实例。只有等到所有这些参数实例都返回结果，不管是 fulfilled 还是 rejected，包装实例才会结束。
+  ```javascript
+  const p = Promise.allSettled([p1, p2, p3]);
+  ```
+  该方法返回的新的 Promise 实例，一旦结束，状态总是 fulfilled，不会变成 rejected。
+
+  Promise.any([promise1, promise2...])，该方法接受一组 Promise 实例作为参数，包装成一个新的 Promise 实例返回。只要参数实例有一个变成 fulfilled 状态，包装实例就会变成 fulfilled 状态；如果所有参数实例都变成 rejected 状态，包装实例就会变成 rejected 状态。
+  ```javascript
+  const p = Promise.any([p1, p2, p3]);
+  ```
+
+3. co 库 + Generator 函数
+  Generator 函数是一个普通函数，但是有两个特征：(1) function 关键字与函数名之间有一个星号；(2) 函数体内部使用yield表达式，定义不同的内部状态。
+
+  利用协程完成 Generator 函数，用 co 库让代码依次执行完，同时以同步的方式书写，也让异步操作按顺序执行。
+  ```javascript
+  co(function* () {
+    const r1 = yield readFilePromise('1.json');
+    const r2 = yield readFilePromise('2.json');
+    const r3 = yield readFilePromise('3.json');
+    const r4 = yield readFilePromise('4.json');
+  })
+  ```
+
+4. async/await
+  async 函数是什么？一句话，它就是 Generator 函数的语法糖。
+  async 的函数都默认返回一个 Promise 对象，而更重要的是 async + await 也能让异步代码以同步的方式来书写。
+  await 是一个让出线程的标志，await 标志着 js 会去先执行一遍后面紧跟的函数，然后马上让出线程，跳出整个 async，执行本轮执行周期里面的任务，等待本轮的宏任务（同步任务）执行完成之后，再回来 async 里等待之前 await 的函数的返回值，如果是返回值异步 promise,那么会把它塞入 promise.resolve() 微任务（异步任务执行栈），等待它前面的异步任务执行完毕之后，再得到 await promise.resolve() 的值，然后才是去执行 await 后面的逻辑，如果 await 函数体返回的不是异步 promise,那么就直接去执行其后面的逻辑。
+
+作者：Danile_1226
+链接：https://www.jianshu.com/p/80ed1ab7a95e
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+## DOM 事件机制
+1. 事件流
+  捕获阶段 -> 处于目标阶段 -> 冒泡阶段
+  在页面中点击一个元素，事件是从这个元素的祖先元素中逐层传递下来的，这个阶段为事件的捕获阶段。
+  当事件传递到这个元素之后，又会把事件逐成传递回去，直到根元素为止，这个阶段是事件的冒泡阶段。
+
+  我们为一个元素绑定一个点击事件的时候，可以指定是要在捕获阶段绑定或者换在冒泡阶段绑定。
+   当 addEventListener 的第三个参数为 true 的时候，代表是在捕获阶段绑定，当第三个参数为 false 或者为空的时候，代表在冒泡阶段绑定。
+
+2. 事件委托
+  事件委托：把一个元素响应事件（click、keydown......）的函数委托到另一个元素。
+  优点：减少内存消耗。
+
+3. event.target 和 event.currentTarget 的区别
+  event.target 在事件流的目标阶段；event.currentTarget 在事件流的捕获，目标及冒泡阶段。
+  只有当事件流处在目标阶段的时候，两者的指向才是一样的。
+  而当处于捕获和冒泡阶段的时候，event.target 指向触发事件的标签元素，event.currentTarget 指向事件绑定的标签元素。
 
 
-TODO: 深浅拷贝 防抖节流
+## 深浅拷贝
+  浅拷贝：只复制对象的一层，原始类型直接复制，引用类型复制其指针。
+  深拷贝：对目标的完全拷贝。
 
+  浅拷贝实现方法：
+  (1) Object.assign()
+  (2) Array.prototype.concat() (浅拷贝数组)
+  (3) Array.prototype.slice() (浅拷贝数组)
+  (4) ...展开运算符 (浅拷贝 iterator 对象)
+  (5) 手写实现
 
+  深拷贝实现方法：
+  (1) JSON.parse(JSON.stringify())，缺点：无法解决循环引用问题；无法拷贝特殊对象(RegExp、Date...)；无法拷贝函数
+  (2) 手写实现
+
+## 防抖与节流
+  防抖：在事件被触发 n 秒后再执行回调，如果在这 n 秒内又被触发，则重新计时，先计算时间后执行。
+  节流：n 秒内回调函数只会被执行一次，先执行后计算。
