@@ -1,7 +1,7 @@
 ## React
 React 是用于构**建用户界面**的 JavaScript 库。
 
-React 的理念：构建**快速响应**的大型 Web 应用程序。
+React 的理念是构建**快速响应**的大型 Web 应用程序。
 
 ## React 架构
 **React15 架构**

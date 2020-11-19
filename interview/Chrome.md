@@ -249,6 +249,237 @@ Scavenge 算法，是把新生代空间对半划分为两个区域，一半是�
 为了降低老生代的垃圾回收而造成的卡顿，V8 将标记过程分为一个个的子标记过程，同时让垃圾回收标记和 JavaScript 应用逻辑交替进行，直到标记阶段完成，我们把这个算法称为**增量标记（Incremental Marking）算法**。
 ![增量标记](https://static001.geekbang.org/resource/image/de/e7/de117fc96ae425ed90366e9060aa14e7.png)
 
+
+## 浏览器存储 storage
+**Cookie**
+
+Cookie 是服务器发送到用户浏览器并保存在本地的一小块数据，它会在浏览器下次向同一服务器再发起请求时被携带并发送到服务器上。
+
+**Cookie 作用：**
++ 会话状态管理（如用户登录状态、购物车、游戏分数或其它需要记录的信息）
+
++ 个性化设置（如用户自定义设置、主题等）
+
++ 浏览器行为跟踪（如跟踪分析用户行为等）
+
+**生成 Cookie：**
+
++ Http Response Header 中的 set-cookie
+
+  我们可以通过响应头里的 Set-Cookie 指定要存储的 Cookie 值。
+
+```js
+ // 注意不能将多个 Cookie 放在一个 Set-Cookie 中
+
+  Set-Cookie: id=cl7; Expires=Wed, 21 Oct 2020 17:28:00 GMT;
+```
+
++ JavaScript 中可以通过 document.cookie 可以读写 Cookie，以键值对的形式展示
+
+```js
+document.cookie = "userName=James"
+```
+
+**设置 Cookie：**
+
+1. 第一次访问网站的时候，浏览器发送 HTTP 请求到服务器。
+
+2. 服务器接受到请求后，会在响应头里面添加一个 Set-Cookie 选项，将 Cookie 添加到响应请求。
+
+3. 浏览器从响应中获取到 Cookie 保存。
+
+4. 之后每次浏览器发送请求的时候，会通过 Cookie 请求头部将 Cookie 信息发送给服务器。另外，Cookie的过期时间、域、路径、有效期、适用站点都可以根据需要来指定。
+
+**Cookie 属性：**
+
++ **Name/Value**
+
+  Cookie 以键值对形式的字符串保存，但 Cookie 中的逗号、分号、空格被当做了特殊的符号。所以当Cookie 字符串中含有这三种符号的时候，需要对其进行额外的编码操作，常用的编码/解码方式有以下三种：
+  
+  + escape / unescape
+  + encodeURIComponent / decodeURIComponent
+  + encodeURI / decodeURI
+  
+
++ **Domain**
+
+  Domain 指定了 Cookie 可以送达的主机名。假如没有指定，那么默认值为当前文档访问地址中的主机部分（但是不包含子域名）。
+
+  需要注意的是，**不能跨域设置 Cookie**。
+
++ **Path**
+
+  Path 指定了一个 URL 路径，这个路径必须出现在要请求的资源的路径中才可以发送 Cookie 首部。
+
+  比如设置 Path=/docs，/docs/Web/ 下的资源会带 Cookie 首部，/test 则不会携带 Cookie 首部。
+
+  Domain 和 Path 标识共同定义了 Cookie 的作用域：即 Cookie 应该发送给哪些 URL。
+
++ **expires**
+
+  Expires 用于设置 Cookie 的过期时间。例如：
+
+  ```javascript
+
+  Expires=Wed, 21 Oct 2020 17:55:00 GMT;
+
+  ```
+
+  当 Expires 属性缺省时，表示是会话性 Cookie，值为 Session，表示的就是会话性 Cookie。
+
+  与会话性 Cookie 相对的是持久性 Cookie，持久性 Cookies 会保存在用户的硬盘中，直至过期或者清除 Cookie。这里值得注意的是，设定的日期和时间只与客户端相关，而不是服务端。
+
++ **Max-Age**
+
+  Max-Age 用于设置在 Cookie 失效之前需要经过的秒数。例如
+
+  ```javascript
+  
+  Max-Age=204800;
+  
+  ```
+
+  当与 Expires 属性并存，优先级高于 Expires。
+
+  Max-Age 有三种情况：
+
+  + 正数：持久化缓存直到过期。
+  + 负数：会话性 Cookie。
+  + 0：立即删除。
+
++ **HttpOnly**
+
+  只能由服务端操作 Cookie，客户端脚本不得操作。设置 HTTPOnly 属性可以防止客户端脚本通过 document.cookie 等方式访问 Cookie，有助于避免 XSS 攻击。
+
++ **Secure**
+
+  表示 Cookie 只通过 https 协议传输。使用 HTTPS 安全协议，可以保护 Cookie 在浏览器和 Web 服务器间的传输过程中不被窃取和篡改。
+
++ **SameSite**
+
+  SameSite 属性可以让 Cookie 在跨站请求时不会被发送，从而可以阻止跨站请求伪造攻击（CSRF）。
+
+  SameSite 可选以下三个值：
+  
+  + Strict：仅发送与当前 URL 相同站点的 Cookie
+  
+  + Lax：允许部分第三方请求携带 Cookie
+  
+  + None：无论是否跨站都会携带 Cookie
+  
+  **注意：**
+  
+  1. HTTP 接口不支持 SameSite=none，如果你想加 SameSite=none 属性，那么该 Cookie 就必须同时加上 Secure 属性，表示只有在 HTTPS 协议下该 Cookie 才会被发送。
+  2. 需要 UA 检测，部分浏览器不能加 SameSite=none，IOS 12 的 Safari 以及老版本的一些 Chrome 会把 SameSite=none 识别成 SameSite=Strict，所以服务端必须在下发 Set-Cookie 响应头时进行 User-Agent 检测，对这些浏览器不下发 SameSite=none 属性。
+
+**Cookie 缺点**：
+
++ 大小限制：4kb 的存储大小限制
+
++ 安全问题：易导致 CSRF 攻击
+
++ 网络开销：增加 HTTP 网络请求开销
+
+
+由于 Cookie 的存储容量受限以及大量 Cookie 导致请求的性能开销剧增，所以为了弥补 Cookie 的这些缺陷，Web Storage 应运而生。
+
+由此可得，Web Storage 的目的是提供一种除 Cookie 之外存储大量可以跨会话存在的数据的机制。
+
+**sessionStorage**
+
+sessionStorage 为每一个给定的源（given origin）维持一个独立的存储区域，该存储区域在页面会话期间可用。
+
+sessionStorage 仅作用于会话期，受同源限制，即便是相同域名下的两个页面，只要它们不在同一个浏览器窗口中打开，那么它们的 sessionStorage 内容便无法共享。
+
+**大小限制**：
+
+不同的浏览器容量限制不同，一般来说是 5-10MB。如果超出使用大小限制的话会抛出**QUOTA_EXCEEDED_ERROR**错误。
+
+**操作 sessionStorage**
+
++ .setItem('name', 'value')
+
++ .getItem('name')
+
++ .removeItem('name')
+
++ .clear()
+
+```javascript
+
+// 存储数据
+
+sessionStorage.setItem("name","value")
+
+sessionStorage.name = "value"
+
+
+
+// 读取数据
+
+// 可用 length 属性和 key() 方法迭代 sessionStorage 中的值或者 for-in 来迭代
+
+sessionStorage.getItem("name")
+
+sessionStorage.name
+
+
+
+// 删除数据
+
+sessionStorage.removeItem("name")
+
+delete sessionStorage.name // 有兼容性问题
+
+
+
+// 删除所有数据
+
+sessionStorage.clear()
+
+```
+
+**localStorage**
+
+**大小限制**
+
+不同的浏览器容量限制不同，一般来说也是 5-10MB。
+
+**操作 localStorage**
+
+与 sessionStorage 一致
+
+**cookie/sessionStorage/localStorage 的对比**
+
+| 存储类型 | 存储容量 | 存储位置 | 数据有效期 | 数据作用域 |
+| -------- | -------- | -------- | -------- | -------- |
+| cookie | 4KB | 本地文件/内存 | 由 Expires 和 Max-Age 决定 | 本地和http传输过程 |
+| sessionStorage | 5-10MB | 本地 | 会话期 | 会话期 |
+| localStorage | 5-10MB | 本地 | 持久 | 同源窗口 |
+
+**cookie/sessionStorage/localStorage 的使用场景**
+
++ 需要兼容到极低版本的浏览器（懂的都懂），那么肯定使用 Cookie 了
+
++ 少量的用户状态数据，且有会话性 Cookie 需求，Cookie 会更好
+
++ 大容量的存取，选 Storage
+
++ 需要持久化缓存，localStorage 吧
+
++ 只需要在当前页面使用的数据，sessionStorage 搞一个
+
++ ...
+
+**使用 cookie/sessionStorage/localStorage 需要注意什么？**
+
++ 有些浏览器提供了会话恢复功能，这种情况下即使关闭了浏览器，会话期 Cookie 也会被保留下来，就好像浏览器从来没有关闭一样，这会导致 Cookie 的生命周期无限期延长。
+
++ 在项目中会把用成熟的库来进行操作 storage，推荐 store.js 等库。
+
+
+
+
 ## 浏览器通信机制
 
 
